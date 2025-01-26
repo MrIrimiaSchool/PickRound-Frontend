@@ -40,7 +40,7 @@ const RouletteWheel = ({ teams = [], onSelect = () => {} }) => {
           radiusLineColor="#000000"
           radiusLineWidth={2}
           fontSize={18}
-          spinDuration={0.2}
+          spinDuration={0.4}
           disableInitialAnimation={true}
         />
       ) : (
