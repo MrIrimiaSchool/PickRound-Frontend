@@ -11,7 +11,7 @@ function RandomPickerPage() {
   const location = useLocation();
   const [teams, setTeams] = useState([]);
   const [randomTeam, setRandomTeam] = useState(null);
-  const [todayPresenter, setTodayPresenter] = useState(null); // Pentru afișarea prezentatorului curent
+  const [todayPresenter, setTodayPresenter] = useState(null);
   const [nextPresenter, setNextPresenter] = useState("");
   const [history, setHistory] = useState([]);
 
@@ -104,81 +104,102 @@ function RandomPickerPage() {
 
   const handleTeamSelect = async (selectedTeam) => {
     setRandomTeam(selectedTeam);
-    setTodayPresenter(selectedTeam); // Actualizare prezentator curent
+    setTodayPresenter(selectedTeam);
 
     const remainingTeams = teams.filter((team) => team !== selectedTeam);
     setTeams(remainingTeams);
 
     const updatedHistory = [
-        { team_name: selectedTeam, selected_at: new Date().toISOString() },
-        ...history,
+      { team_name: selectedTeam, selected_at: new Date().toISOString() },
+      ...history,
     ];
     setHistory(updatedHistory);
 
     if (remainingTeams.length === 1) {
-        const nextDate = new Date();
-        nextDate.setDate(nextDate.getDate() + 7);
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + 7);
 
-        try {
-            // Salvăm starea finală în backend
-            await fetch(`https://pickround.onrender.com/projects/${projectId}/finalize`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    lastPresenter: selectedTeam,
-                    nextPresenter: remainingTeams[0],
-                }),
-            });
+      try {
+        await fetch(`https://pickround.onrender.com/projects/${projectId}/finalize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lastPresenter: selectedTeam,
+            nextPresenter: remainingTeams[0],
+          }),
+        });
 
-            setNextPresenter(
-                `Next time reporter: ${remainingTeams[0]} on ${nextDate.toLocaleDateString()}`
-            );
+        setNextPresenter(
+          `Next time reporter: ${remainingTeams[0]} on ${nextDate.toLocaleDateString()}`
+        );
 
-            // Eliminăm ultima echipă din "Available Teams"
-            setTimeout(() => setTeams([]), 500); // Adaugă un delay scurt pentru tranziție vizuală
-        } catch (error) {
-            console.error("Failed to finalize project state:", error);
-        }
+        setTimeout(() => setTeams([]), 500);
+      } catch (error) {
+        console.error("Failed to finalize project state:", error);
+      }
     }
 
     try {
-        // Persist echipele rămase în backend
-        await fetch(`https://pickround.onrender.com/projects/${projectId}/update-teams`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ teams: remainingTeams }),
-        });
+      await fetch(`https://pickround.onrender.com/projects/${projectId}/update-teams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teams: remainingTeams }),
+      });
     } catch (error) {
-        console.error("Failed to update teams in database:", error);
+      console.error("Failed to update teams in database:", error);
     }
 
     try {
-        // Salvăm istoricul în backend
-        await fetch(`https://pickround.onrender.com/projects/${projectId}/history`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ teamName: selectedTeam }),
-        });
+      await fetch(`https://pickround.onrender.com/projects/${projectId}/history`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamName: selectedTeam }),
+      });
     } catch (error) {
-        console.error("Failed to save history entry:", error);
+      console.error("Failed to save history entry:", error);
     }
-};
-
+  };
 
   const handleReset = async () => {
     setRandomTeam(null);
     setTodayPresenter(null);
     setNextPresenter("");
-
+  
     try {
-      const response = await fetch(`https://pickround.onrender.com/projects/${projectId}/reset-teams`, {
-        method: "POST",
-      });
+      const response = await fetch(
+        `https://pickround.onrender.com/projects/${projectId}/reset-teams`,
+        { method: "POST" }
+      );
       const data = await response.json();
-
+  
       if (data.teams && Array.isArray(data.teams)) {
         setTeams(data.teams);
-        fetchHistory();
+  
+        // Adaugă "next time presenter" în istoric
+        if (nextPresenter) {
+          const nextPresenterTeam = nextPresenter.split(":")[1]?.trim().split(" ")[0]; // Extrage numele echipei
+          const nextDate = new Date();
+          nextDate.setDate(nextDate.getDate() + 7); // Data curentă + 7 zile
+  
+          // Actualizează vizual istoria locală
+          const updatedHistory = [
+            { team_name: nextPresenterTeam, selected_at: nextDate.toISOString() },
+            ...history,
+          ];
+          setHistory(updatedHistory);
+  
+          // Salvează în backend
+          await fetch(`https://pickround.onrender.com/projects/${projectId}/history`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              teamName: nextPresenterTeam,
+              selectedAt: nextDate.toISOString(),
+            }),
+          });
+        }
+  
+        fetchHistory(); // Reîmprospătează istoricul
       } else {
         console.error("Invalid data format during reset:", data);
       }
@@ -186,37 +207,57 @@ function RandomPickerPage() {
       console.error("Failed to reset teams:", error);
     }
   };
+  
 
   return (
-    <Box bg={bgColor} p={10} minHeight="100vh" display="flex" flexDirection="column" alignItems="center">
+    <Box
+      bg={bgColor}
+      p={10}
+      minHeight="100vh"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      style={{ overflow: "hidden" }}
+    >
       <HeaderSection projectName={selectedProject.name} />
       <Box
         display="grid"
         gridTemplateColumns="1fr 2fr 1fr"
         gap={8}
-        w="90%"
+        width="95vw"
+        height="90vh"
+        maxHeight="90vh"
         alignItems="start"
       >
         <motion.div initial="hidden" animate="visible" exit="hidden" variants={animationVariants}>
           <AvailableTeams teams={teams} background={sectionBg} onDelete={handleDeleteTeam} />
         </motion.div>
 
-        <motion.div initial="hidden" animate="visible" exit="hidden" variants={animationVariants}>
-          <VStack spacing={8} align="center" justify="center">
+              <motion.div initial="hidden" animate="visible" exit="hidden" variants={animationVariants}>
+        <VStack spacing={8} align="center" justify="center">
+          {/* Rezervăm spațiu pentru textul Today Reporter */}
+          <Box
+            minHeight="40px" // Rezervă spațiu pentru textul Today Reporter
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
             {teams.length > 1 && todayPresenter && (
               <Text fontSize="2xl" fontWeight="bold" color="green.500">
                 Today Reporter: {todayPresenter}
               </Text>
             )}
-            <WheelSection
-              teams={teams}
-              randomTeam={randomTeam}
-              nextPresenter={nextPresenter}
-              onTeamSelect={handleTeamSelect}
-              onReset={handleReset}
-            />
-          </VStack>
-        </motion.div>
+          </Box>
+          <WheelSection
+            teams={teams}
+            randomTeam={randomTeam}
+            nextPresenter={nextPresenter}
+            onTeamSelect={handleTeamSelect}
+            onReset={handleReset}
+          />
+        </VStack>
+      </motion.div>
+
 
         <motion.div initial="hidden" animate="visible" exit="hidden" variants={animationVariants}>
           <HistorySection history={history} />
