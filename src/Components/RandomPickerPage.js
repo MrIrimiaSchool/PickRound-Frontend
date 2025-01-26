@@ -108,47 +108,55 @@ function RandomPickerPage() {
     const remainingTeams = teams.filter((team) => team !== selectedTeam);
     setTeams(remainingTeams);
 
+    // Actualizare vizuală instantanee a istoricului
+    const updatedHistory = [
+        { team_name: selectedTeam, selected_at: new Date().toISOString() },
+        ...history,
+    ];
+    setHistory(updatedHistory);
+
     if (remainingTeams.length === 1) {
-      const nextDate = new Date();
-      nextDate.setDate(nextDate.getDate() + 7);
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 7);
 
-      try {
-        await fetch(`https://pickround.onrender.com/projects/${projectId}/finalize`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lastPresenter: selectedTeam,
-            nextPresenter: remainingTeams[0],
-          }),
+        try {
+            await fetch(`https://pickround.onrender.com/projects/${projectId}/finalize`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    lastPresenter: selectedTeam,
+                    nextPresenter: remainingTeams[0],
+                }),
+            });
+
+            setNextPresenter(
+                `Next time presenter: ${remainingTeams[0]} on ${nextDate.toLocaleDateString()}`
+            );
+        } catch (error) {
+            console.error("Failed to finalize project state:", error);
+        }
+    }
+
+    try {
+        await fetch(`https://pickround.onrender.com/projects/${projectId}/update-teams`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ teams: remainingTeams }),
         });
-
-        setNextPresenter(`Next time presenter: ${remainingTeams[0]} on ${nextDate.toLocaleDateString()}`);
-      } catch (error) {
-        console.error("Failed to finalize project state:", error);
-      }
+    } catch (error) {
+        console.error("Failed to update teams in database:", error);
     }
 
     try {
-      await fetch(`https://pickround.onrender.com/projects/${projectId}/update-teams`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teams: remainingTeams }),
-      });
+        await fetch(`https://pickround.onrender.com/projects/${projectId}/history`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ teamName: selectedTeam }),
+        });
     } catch (error) {
-      console.error("Failed to update teams in database:", error);
+        console.error("Failed to save history entry:", error);
     }
-
-    try {
-      await fetch(`https://pickround.onrender.com/projects/${projectId}/history`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamName: selectedTeam }),
-      });
-      fetchHistory();
-    } catch (error) {
-      console.error("Failed to save history entry:", error);
-    }
-  };
+};
 
   const handleReset = async () => {
     setRandomTeam(null);
