@@ -30,7 +30,7 @@ function RandomPickerPage() {
   useEffect(() => {
     const fetchProjectState = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/projects/${projectId}/state`);
+        const response = await fetch(`https://pickround.onrender.com/projects/${projectId}/state`);
         const data = await response.json();
 
         if (data.last_presenter && data.next_presenter) {
@@ -48,7 +48,7 @@ function RandomPickerPage() {
 
     const fetchTeams = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/projects/${projectId}/populate-teams`, {
+        const response = await fetch(`https://pickround.onrender.com/projects/${projectId}/populate-teams`, {
           method: "POST",
         });
         const data = await response.json();
@@ -65,7 +65,7 @@ function RandomPickerPage() {
 
     const fetchHistory = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/projects/${projectId}/history`);
+        const response = await fetch(`https://pickround.onrender.com/projects/${projectId}/history`);
         const data = await response.json();
 
         if (data.history && Array.isArray(data.history)) {
@@ -86,7 +86,7 @@ function RandomPickerPage() {
   const handleDeleteTeam = async (teamName) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/projects/${projectId}/teams/${teamName}`,
+        `https://pickround.onrender.com/projects/${projectId}/teams/${teamName}`,
         { method: "DELETE" }
       );
 
@@ -113,7 +113,7 @@ function RandomPickerPage() {
       nextDate.setDate(nextDate.getDate() + 7);
 
       try {
-        await fetch(`http://localhost:5000/projects/${projectId}/finalize`, {
+        await fetch(`https://pickround.onrender.com/projects/${projectId}/finalize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -129,7 +129,7 @@ function RandomPickerPage() {
     }
 
     try {
-      await fetch(`http://localhost:5000/projects/${projectId}/update-teams`, {
+      await fetch(`https://pickround.onrender.com/projects/${projectId}/update-teams`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teams: remainingTeams }),
@@ -139,7 +139,7 @@ function RandomPickerPage() {
     }
 
     try {
-      await fetch(`http://localhost:5000/projects/${projectId}/history`, {
+      await fetch(`https://pickround.onrender.com/projects/${projectId}/history`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teamName: selectedTeam }),
@@ -155,7 +155,7 @@ function RandomPickerPage() {
     setNextPresenter("");
 
     try {
-      const response = await fetch(`http://localhost:5000/projects/${projectId}/reset-teams`, {
+      const response = await fetch(`https://pickround.onrender.com/projects/${projectId}/reset-teams`, {
         method: "POST",
       });
       const data = await response.json();
